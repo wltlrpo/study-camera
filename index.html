@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10141d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Study Camera">
+  <meta name="description" content="광고 없는 공부용 카메라. 사진은 기기에서 처리됩니다.">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./icon-192.png">
+  <link rel="icon" href="./icon-192.png" type="image/png">
+  <title>Study Camera</title>
+  <style>
+    :root { color-scheme: dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Pretendard, sans-serif; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: #0c1018; color: #f4f6fa; }
+    body { -webkit-tap-highlight-color: transparent; }
+    button { font: inherit; cursor: pointer; }
+    button:disabled { cursor: default; opacity: .45; }
+    .app { max-width: 580px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column;
+      padding: max(env(safe-area-inset-top), 17px) 16px max(env(safe-area-inset-bottom), 20px); }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 2px 16px; }
+    .brand { display: flex; gap: 10px; align-items: center; }
+    .brand-mark { height: 36px; width: 36px; border-radius: 12px; display: grid; place-items: center; background: #202a3b; color: #d5e2ff; }
+    .brand h1 { margin: 0; font-size: 17px; letter-spacing: -.4px; font-weight: 720; }
+    .brand small { display: block; color: #94a0b6; font-size: 11px; margin-top: 3px; }
+    .privacy { color: #b3bed0; font-size: 11px; border: 1px solid #334156; border-radius: 99px; padding: 7px 10px; white-space: nowrap; }
+    .privacy:before { content: ""; display: inline-block; width: 6px; height: 6px; background: #8ee1b3; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+    .camera-shell { position: relative; width: 100%; flex: 1 1 auto; min-height: 310px; max-height: min(70dvh, 690px);
+      background: #080b10; border: 1px solid #283346; border-radius: 22px; overflow: hidden; isolation: isolate; }
+    .camera-video, .photo-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #03060b; }
+    .photo-preview { display: none; }
+    .camera-video { display: none; }
+    .camera-shell.live .camera-video { display: block; }
+    .camera-shell.previewing .photo-preview { display: block; }
+    .camera-shell.previewing .camera-video { display: none; }
+    .camera-shell.live::after { content: ""; position: absolute; inset: 18% 13%; border: 1px solid #ffffff28;
+      border-radius: 7px; pointer-events: none; z-index: 1; }
+    .top-pills { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; z-index: 2; }
+    .pill { padding: 6px 9px; border-radius: 8px; background: #05080bc9; color: #e4e9f3; font-size: 11px; backdrop-filter: blur(9px); }
+    .pill.light { background: #1c2944e0; }
+    .welcome { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; text-align: center; padding: 24px; gap: 12px; background: radial-gradient(circle at 50% 35%,#1b2b44 0,#080b11 66%); }
+    .welcome-icon { border: 1px solid #466086; border-radius: 20px; padding: 18px; background: #263650; }
+    .welcome h2 { margin: 7px 0 0; font-size: 20px; letter-spacing: -.5px; }
+    .welcome p { margin: 0; color: #aeb9ca; line-height: 1.65; font-size: 13px; max-width: 270px; }
+    .primary { color: #101827; background: #e4edff; border: 0; border-radius: 13px; font-weight: 750; padding: 13px 21px; min-height: 44px; }
+    .primary:active { background: #b9cff9; }
+    .hidden { display: none !important; }
+    .controls { padding: 18px 0 0; }
+    .capture-controls { display: flex; align-items: center; justify-content: center; gap: 24px; padding: 4px 0 13px; }
+    .shot-btn { width: 74px; height: 74px; border-radius: 50%; border: 4px solid #eef2fb; padding: 5px; background: transparent;
+      display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+    .shot-btn span { width: 100%; height: 100%; border-radius: 50%; background: #eff3ff; }
+    .shot-btn:active span { background: #adbfe6; }
+    .sub-btn { min-width: 92px; min-height: 42px; background: #182131; color: #cbd7e8; border: 1px solid #38465d; border-radius: 11px; padding: 9px 12px; }
+    .sub-btn:active { background: #27354b; }
+    .wide-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 5px 0 8px; }
+    .wide-2 button { min-height: 48px; border-radius: 12px; }
+    .capture-settings { border-top: 1px solid #253042; margin-top: 5px; padding-top: 13px; display: flex; gap: 7px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .setting-label { color: #aebbd0; font-size: 12px; }
+    .mode-switch { display: flex; background: #182131; border-radius: 10px; padding: 3px; gap: 3px; }
+    .mode-switch button { border: 0; border-radius: 8px; color: #aebdd1; background: transparent; padding: 9px 10px; font-size: 11px; min-height: 34px; }
+    .mode-switch button.selected { color: #101a2c; background: #dbe7ff; font-weight: 700; }
+    .mode-switch button:disabled { opacity: .4; }
+    .hint { margin: 12px 1px 0; color: #99a8bd; font-size: 12px; line-height: 1.65; text-align: center; }
+    .hint strong { color: #e0e6f1; font-weight: 650; }
+    .toast { position: fixed; top: calc(env(safe-area-inset-top) + 76px); left: 50%; width: calc(100% - 36px);
+      max-width: 500px; transform: translateX(-50%); background: #e8f0fe; color: #16223b; border-radius: 12px;
+      padding: 13px 15px; font-size: 13px; line-height: 1.5; box-shadow: 0 10px 28px #0006; z-index: 10; }
+    .status-line { text-align: center; color: #899bb1; font-size: 11px; padding: 4px 0 0; }
+    .mono { font-variant-numeric: tabular-nums; }
+    svg { display: block; }
+    @media (max-height: 690px) { .app { padding-top: max(env(safe-area-inset-top), 7px); }
+      header { padding-bottom: 9px; } .camera-shell { min-height: 250px; max-height: 53dvh; }
+      .controls { padding-top: 10px; } .shot-btn { height: 62px; width: 62px; } .hint { margin-top: 7px; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4H9.5l-1.7 2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2.8z"/><circle cx="12" cy="13" r="3.1"/></svg>
+        </div>
+        <div><h1>Study Camera</h1><small>공부를 위한 간편 카메라</small></div>
+      </div>
+      <span class="privacy">광고 없음</span>
+    </header>
+
+    <section class="camera-shell" id="cameraShell" aria-label="카메라 화면">
+      <video class="camera-video" id="video" autoplay muted playsinline></video>
+      <img class="photo-preview" id="photoPreview" alt="촬영한 사진 미리보기">
+      <div class="top-pills">
+        <span class="pill" id="cameraState">카메라 대기</span>
+        <span class="pill light mono" id="resolution">해상도 확인 중</span>
+      </div>
+      <div class="welcome" id="welcome">
+        <div class="welcome-icon" aria-hidden="true">
+          <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#dce9ff" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4H9.5l-1.7 2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2.8z"/><circle cx="12" cy="13" r="3.1"/></svg>
+        </div>
+        <h2>문제 사진을 간편하게</h2>
+        <p>시작을 누르고 카메라 접근을 허용해 줘.<br>사진은 서버에 전송하지 않아.</p>
+        <button type="button" class="primary" id="startBtn">카메라 시작</button>
+      </div>
+    </section>
+
+    <section class="controls" aria-label="카메라 조작">
+      <div class="capture-controls" id="captureControls">
+        <button type="button" class="sub-btn" id="restartBtn" disabled>다시 연결</button>
+        <button type="button" class="shot-btn" id="shutterBtn" aria-label="사진 촬영" disabled><span></span></button>
+        <button type="button" class="sub-btn" id="helpBtn">사용 안내</button>
+      </div>
+      <div class="wide-2 hidden" id="previewControls">
+        <button type="button" class="sub-btn" id="retakeBtn">다시 찍기</button>
+        <button type="button" class="primary" id="shareBtn">사진 저장·공유</button>
+      </div>
+      <div class="wide-2 hidden" id="extraControls">
+        <button type="button" class="sub-btn" id="viewFullBtn">원본 크게 보기</button>
+        <button type="button" class="sub-btn" id="downloadBtn">파일로 저장</button>
+      </div>
+      <div class="capture-settings" id="captureSettings">
+        <span class="setting-label">촬영 방식</span>
+        <div class="mode-switch" role="group" aria-label="촬영 방식">
+          <button type="button" id="modeVideo" class="selected" aria-pressed="true">영상 프레임</button>
+          <button type="button" id="modePhoto" disabled aria-pressed="false">고해상도 실험</button>
+        </div>
+      </div>
+      <p class="hint" id="hint">먼저 <strong>영상 프레임</strong> 방식으로 무음 여부와 글씨 선명도를 확인해 봐. 기기·지역별 촬영음은 보장할 수 없어.</p>
+      <div class="status-line" id="statusLine">카메라를 켜면 실제 촬영 해상도가 표시돼.</div>
+    </section>
+  </main>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script>
+  (() => {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      shell: $('cameraShell'), video: $('video'), welcome: $('welcome'), preview: $('photoPreview'),
+      state: $('cameraState'), resolution: $('resolution'), start: $('startBtn'), restart: $('restartBtn'),
+      shutter: $('shutterBtn'), help: $('helpBtn'), captureControls: $('captureControls'),
+      previewControls: $('previewControls'), extraControls: $('extraControls'),
+      retake: $('retakeBtn'), share: $('shareBtn'), download: $('downloadBtn'), viewFull: $('viewFullBtn'),
+      settings: $('captureSettings'), modeVideo: $('modeVideo'), modePhoto: $('modePhoto'),
+      hint: $('hint'), status: $('statusLine'), toast: $('toast')
+    };
+    let stream = null;
+    let imageCapture = null;
+    let mode = 'video';
+    let photoBlob = null;
+    let photoUrl = null;
+    let busy = false;
+    let toastTimer = null;
+
+    function toast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.remove('hidden');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => els.toast.classList.add('hidden'), 4500);
+    }
+
+    function readyUI(ready) {
+      els.shutter.disabled = !ready;
+      els.restart.disabled = !ready;
+      if (ready) {
+        els.welcome.classList.add('hidden');
+        els.shell.classList.add('live');
+        els.state.textContent = '카메라 사용 중';
+      }
+    }
+
+    async function startCamera() {
+      if (busy) return;
+      busy = true;
+      els.start.disabled = true;
+      els.start.textContent = '연결하는 중...';
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error('카메라 사용을 지원하지 않는 환경이야. HTTPS 주소의 Safari에서 열어 줘.');
+        }
+        stopCamera();
+        const requested = {
+          audio: false,
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 3840 }, height: { ideal: 2160 },
+            frameRate: { ideal: 15, max: 30 }
+          }
+        };
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(requested);
+        } catch (e) {
+          if (e.name === 'OverconstrainedError' || e.name === 'NotFoundError') {
+            stream = await navigator.mediaDevices.getUserMedia({audio: false, video: { facingMode: 'environment' }});
+          } else { throw e; }
+        }
+        els.video.srcObject = stream;
+        await els.video.play();
+        if (!els.video.videoWidth) {
+          await new Promise(resolve => {
+            els.video.addEventListener('loadedmetadata', resolve, {once: true});
+            setTimeout(resolve, 1500);
+          });
+        }
+        const track = stream.getVideoTracks()[0];
+        imageCapture = null;
+        if (typeof window.ImageCapture === 'function') {
+          try { imageCapture = new window.ImageCapture(track); } catch (_) { /* unsupported on device */ }
+        }
+        els.modePhoto.disabled = !imageCapture || typeof imageCapture.takePhoto !== 'function';
+        if (els.modePhoto.disabled && mode === 'photo') setMode('video');
+        const { videoWidth: w, videoHeight: h } = els.video;
+        els.resolution.textContent = w && h ? `${w} × ${h}` : '해상도 미확인';
+        els.status.textContent = w && h ? `영상 프레임 해상도: ${w} × ${h} (${(w*h/1000000).toFixed(1)}MP)` : '촬영 후 사진 해상도를 확인해 줘.';
+        readyUI(true);
+      } catch (err) {
+        stopCamera();
+        const message = err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError'
+          ? '카메라 권한이 차단됐어. Safari의 사이트 설정에서 카메라 권한을 허용하고 다시 실행해 줘.'
+          : (err.message || '카메라를 실행하지 못했어.');
+        els.state.textContent = '카메라 연결 실패';
+        els.status.textContent = message;
+        toast(message);
+        els.start.textContent = '다시 시도';
+        els.welcome.classList.remove('hidden');
+      } finally {
+        busy = false;
+        els.start.disabled = false;
+        if (els.start.textContent === '연결하는 중...') els.start.textContent = '카메라 시작';
+      }
+    }
+
+    function stopCamera() {
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      stream = null;
+      imageCapture = null;
+      els.video.srcObject = null;
+      els.shell.classList.remove('live');
+      els.shutter.disabled = true;
+      els.restart.disabled = true;
+    }
+
+    function setMode(next) {
+      if (next === 'photo' && els.modePhoto.disabled) return;
+      mode = next;
+      els.modeVideo.classList.toggle('selected', mode === 'video');
+      els.modePhoto.classList.toggle('selected', mode === 'photo');
+      els.modeVideo.setAttribute('aria-pressed', String(mode === 'video'));
+      els.modePhoto.setAttribute('aria-pressed', String(mode === 'photo'));
+      els.hint.innerHTML = mode === 'video'
+        ? '기본 방식은 소리를 재생하지 않는 <strong>영상 프레임 캡처</strong>야. 실제 무음 여부와 화질은 아이폰에서 확인해야 해.'
+        : '<strong>고해상도 실험</strong>은 브라우저 사진 API를 사용해. 화질이 좋아질 수 있지만 촬영음이 발생할 수도 있어.';
+    }
+
+    function captureFrame() {
+      const w = els.video.videoWidth, h = els.video.videoHeight;
+      if (!w || !h) throw new Error('카메라 화면이 아직 준비되지 않았어.');
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d', {alpha: false});
+      if (!ctx) throw new Error('이미지 처리를 지원하지 않아.');
+      ctx.drawImage(els.video, 0, 0, w, h);
+      return new Promise((resolve, reject) => {
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('사진 파일을 생성하지 못했어.')), 'image/jpeg', .96);
+      });
+    }
+
+    async function imageSize(blob) {
+      const url = URL.createObjectURL(blob);
+      try {
+        const img = new Image();
+        img.src = url;
+        if (img.decode) await img.decode();
+        else await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+        return {width: img.naturalWidth, height: img.naturalHeight};
+      } finally { URL.revokeObjectURL(url); }
+    }
+
+    function clearPhoto() {
+      els.preview.removeAttribute('src');
+      if (photoUrl) URL.revokeObjectURL(photoUrl);
+      photoUrl = null;
+      photoBlob = null;
+    }
+
+    async function takePicture() {
+      if (busy || !stream || !els.video.videoWidth) return;
+      busy = true;
+      els.shutter.disabled = true;
+      try {
+        let blob;
+        if (mode === 'photo' && imageCapture) {
+          try {
+            blob = await imageCapture.takePhoto();
+          } catch (_) {
+            blob = await captureFrame();
+            toast('고해상도 촬영을 지원하지 않아 영상 프레임으로 대신 찍었어.');
+          }
+        } else {
+          blob = await captureFrame();
+        }
+        clearPhoto();
+        photoBlob = blob;
+        photoUrl = URL.createObjectURL(blob);
+        els.preview.src = photoUrl;
+        const size = await imageSize(blob).catch(() => ({width: 0, height: 0}));
+        els.resolution.textContent = size.width ? `${size.width} × ${size.height}` : '사진 촬영 완료';
+        els.status.textContent = size.width
+          ? `촬영 결과: ${size.width} × ${size.height} (${(size.width*size.height/1000000).toFixed(1)}MP)`
+          : '촬영 완료. 사진을 확대해서 글씨를 확인해 줘.';
+        els.shell.classList.add('previewing');
+        els.shell.classList.remove('live');
+        els.state.textContent = '촬영한 사진';
+        els.captureControls.classList.add('hidden');
+        els.settings.classList.add('hidden');
+        els.previewControls.classList.remove('hidden');
+        els.extraControls.classList.remove('hidden');
+        els.hint.textContent = '원본 크게 보기로 작은 수식과 글씨가 선명한지 확인해 봐.';
+      } catch (err) {
+        toast(err.message || '사진 촬영에 실패했어.');
+      } finally {
+        busy = false;
+        els.shutter.disabled = !stream;
+      }
+    }
+
+    function retake() {
+      clearPhoto();
+      els.shell.classList.remove('previewing');
+      els.shell.classList.add('live');
+      els.state.textContent = '카메라 사용 중';
+      els.captureControls.classList.remove('hidden');
+      els.settings.classList.remove('hidden');
+      els.previewControls.classList.add('hidden');
+      els.extraControls.classList.add('hidden');
+      els.hint.innerHTML = mode === 'video'
+        ? '기본 방식은 소리를 재생하지 않는 <strong>영상 프레임 캡처</strong>야. 실제 무음 여부와 화질은 아이폰에서 확인해야 해.'
+        : '<strong>고해상도 실험</strong>은 브라우저 사진 API를 사용해. 화질이 좋아질 수 있지만 촬영음이 발생할 수도 있어.';
+      const w = els.video.videoWidth, h = els.video.videoHeight;
+      els.resolution.textContent = w && h ? `${w} × ${h}` : '해상도 미확인';
+      els.status.textContent = w && h ? `영상 프레임 해상도: ${w} × ${h} (${(w*h/1000000).toFixed(1)}MP)` : '촬영 준비 중';
+    }
+
+    function photoFile() {
+      if (!photoBlob) throw new Error('저장할 사진이 없어.');
+      const stamp = new Date().toLocaleString('sv-SE').replace(/[\s:]/g, '-');
+      const ext = photoBlob.type.includes('png') ? 'png' : photoBlob.type.includes('heic') ? 'heic' : 'jpg';
+      return new File([photoBlob], `study-camera-${stamp}.${ext}`, {type: photoBlob.type || 'image/jpeg'});
+    }
+
+    function downloadFile() {
+      if (!photoBlob) return;
+      const file = photoFile();
+      const a = document.createElement('a');
+      a.href = photoUrl;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast('파일 저장을 요청했어. 아이폰에서는 파일 앱의 다운로드 항목을 확인해 줘.');
+    }
+
+    async function sharePhoto() {
+      if (!photoBlob) return;
+      const file = photoFile();
+      if (navigator.share && (!navigator.canShare || navigator.canShare({files: [file]}))) {
+        try {
+          await navigator.share({files: [file], title: 'Study Camera 사진'});
+          return;
+        } catch (err) {
+          if (err.name === 'AbortError') return;
+          toast('공유가 실패했어. 파일로 저장을 이용해 줘.');
+          return;
+        }
+      }
+      downloadFile();
+    }
+
+    els.start.addEventListener('click', startCamera);
+    els.restart.addEventListener('click', startCamera);
+    els.shutter.addEventListener('click', takePicture);
+    els.modeVideo.addEventListener('click', () => setMode('video'));
+    els.modePhoto.addEventListener('click', () => setMode('photo'));
+    els.retake.addEventListener('click', retake);
+    els.share.addEventListener('click', sharePhoto);
+    els.download.addEventListener('click', downloadFile);
+    els.viewFull.addEventListener('click', () => {
+      if (photoUrl) window.open(photoUrl, '_blank', 'noopener');
+    });
+    els.help.addEventListener('click', () => toast('1. 카메라를 시작해. 2. 촬영 버튼을 눌러. 3. 사진 저장·공유에서 아이폰의 ‘이미지 저장’ 또는 ChatGPT 공유를 선택해.'));
+    window.addEventListener('pagehide', stopCamera);
+    window.addEventListener('pageshow', (event) => { if (event.persisted) {
+      els.welcome.classList.remove('hidden');
+      els.shell.classList.remove('previewing');
+      els.captureControls.classList.remove('hidden');
+      els.previewControls.classList.add('hidden');
+      els.extraControls.classList.add('hidden');
+      els.settings.classList.remove('hidden');
+      clearPhoto();
+    }});
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  })();
+  </script>
+</body>
+</html>
