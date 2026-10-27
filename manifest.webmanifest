@@ -1,14 +1,14 @@
 {
   "name": "Study Camera",
   "short_name": "StudyCam",
-  "description": "광고 없는 공부용 카메라",
+  "description": "화면을 꽉 채우는 광고 없는 공부용 카메라",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#0c1018",
-  "theme_color": "#10141d",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
-    {"src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-    {"src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    {"src":"./icon-192.png","sizes":"192x192","type":"image/png","purpose":"any maskable"},
+    {"src":"./icon-512.png","sizes":"512x512","type":"image/png","purpose":"any maskable"}
   ]
 }
